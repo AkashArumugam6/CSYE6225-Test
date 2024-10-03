@@ -11,6 +11,15 @@ app.use('/healthz', async (req, res) => {
     if (req.method !== 'GET') {
         return res.status(405).send();  // Respond with 405 Method Not Allowed
     }
+
+    if (Object.keys(req.query).length !== 0 || req._body === true || req.header('Content-length') !== undefined){
+        return res.status(400).send();  // Respond with 400 Bad Request if payload is present
+    }
+
+    // Ensure that only `/healthz` is checked and not sub-paths like `/healthz/*`
+    if (req.path !== '/') {
+        return res.status(404).send();  // Respond with 404 Not Found for invalid sub-paths
+    }
     
     try {
         await sequelize.authenticate(); 
@@ -37,7 +46,7 @@ const startServer = async () => {
         });
 
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
+        console.error(error);
         process.exit(1);
     }
 };

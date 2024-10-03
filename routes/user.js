@@ -4,21 +4,24 @@ const basicAuth = require('basic-auth');
 const User = require('../models/User');
 const router = express.Router();
 
+// Regex for email validation
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Utility function for basic auth
 const auth = async (req, res, next) => {
     const credentials = basicAuth(req);
     if (!credentials) {
-        return res.status(401).send('Access denied. No credentials provided.');
+        return res.status(401).send('');
     }
 
     const user = await User.findOne({ where: { email: credentials.name } });
     if (!user) {
-        return res.status(401).send('Access denied. Invalid email or password.');
+        return res.status(401).send('');
     }
 
     const validPassword = await bcrypt.compare(credentials.pass, user.password_hash);
     if (!validPassword) {
-        return res.status(401).send('Access denied. Invalid email or password.');
+        return res.status(401).send('');
     }
 
     req.user = user;  // Attach user to request object
@@ -32,7 +35,12 @@ router.post('/v1/user', async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-        return res.status(400).send('User with this email already exists.');
+        return res.status(400).send('');
+    }
+
+    // Validate email format
+    if (!emailRegex.test(email)) {
+        return res.status(400).send('');
     }
 
     // Hash the password with bcrypt
@@ -75,7 +83,7 @@ router.put('/v1/user/self', auth, async (req, res) => {
     const { first_name, last_name, password } = req.body;
 
     if (!first_name || !last_name || !password) {
-        return res.status(400).send('Invalid request payload.');
+        return res.status(400).send('');
     }
 
     const user = req.user;
